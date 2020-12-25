@@ -1,7 +1,7 @@
 import asyncio
-import sys
 import os
 import re
+import sys
 import tkinter as tk
 from socket import gaierror
 from tkinter import messagebox

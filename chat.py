@@ -1,7 +1,6 @@
 import asyncio
 import json
 from asyncio import Queue, StreamWriter, StreamReader
-from asyncio.exceptions import TimeoutError as asyncTimeoutError
 from contextlib import asynccontextmanager
 from dataclasses import dataclass, field
 from typing import Tuple
@@ -122,9 +121,7 @@ async def send_msgs(chat_queues: ChatQueues, settings: Settings):
 
 
 @asynccontextmanager
-async def chat_connection(
-    host: str, port: int
-) -> Tuple[asyncio.StreamReader, asyncio.StreamWriter]:
+async def chat_connection(host: str, port: int) -> Tuple[asyncio.StreamReader, asyncio.StreamWriter]:
     logger.debug("trying to connect to server", extra={"host": host, "port": port})
 
     async with fail_after(Settings().CONNECTION_TTIMEOUT):
@@ -144,7 +141,6 @@ async def watch_for_connection(chat_queues: ChatQueues):
         async with fail_after(Settings().WATCHDOG_TIMEOUT):
             msg = await chat_queues.watchdog_queue.get()
             watchdog_logger.info(msg)
-
 
 
 async def save_messages(chat_queues: ChatQueues, history_path):
