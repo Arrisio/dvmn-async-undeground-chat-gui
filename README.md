@@ -1,23 +1,23 @@
-# Графический клиент для чата(minechat)
-Доступно 2-клиента:
- * main.py - полноценный gui-клиент для общения в чате minechat(поддерживает историю сообщений)
- * register_new_user.py - gui-клиент для регистрации нового пользователя
+п»ї# Р“СЂР°С„РёС‡РµСЃРєРёР№ РєР»РёРµРЅС‚ РґР»СЏ С‡Р°С‚Р°(minechat)
+Р”РѕСЃС‚СѓРїРЅРѕ 2-РєР»РёРµРЅС‚Р°:
+ * main.py - РїРѕР»РЅРѕС†РµРЅРЅС‹Р№ gui-РєР»РёРµРЅС‚ РґР»СЏ РѕР±С‰РµРЅРёСЏ РІ С‡Р°С‚Рµ minechat(РїРѕРґРґРµСЂР¶РёРІР°РµС‚ РёСЃС‚РѕСЂРёСЋ СЃРѕРѕР±С‰РµРЅРёР№)
+ * register_new_user.py - gui-РєР»РёРµРЅС‚ РґР»СЏ СЂРµРіРёСЃС‚СЂР°С†РёРё РЅРѕРІРѕРіРѕ РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ
 
 
-## Как установить
+## РљР°Рє СѓСЃС‚Р°РЅРѕРІРёС‚СЊ
 
-Для работы клиентов нужен Python версии не ниже 3.8.
+Р”Р»СЏ СЂР°Р±РѕС‚С‹ РєР»РёРµРЅС‚РѕРІ РЅСѓР¶РµРЅ Python РІРµСЂСЃРёРё РЅРµ РЅРёР¶Рµ 3.8.
 
 ```bash
 pip install -r requirements.txt
 ```
 
-## Как запустить
+## РљР°Рє Р·Р°РїСѓСЃС‚РёС‚СЊ
 
 ```bash
 python main.py
 
-Выполнена авторизация. Пользователь Focused Loyd
+Р’С‹РїРѕР»РЅРµРЅР° Р°РІС‚РѕСЂРёР·Р°С†РёСЏ. РџРѕР»СЊР·РѕРІР°С‚РµР»СЊ Focused Loyd
 [1580201350.5225937] Connection is alive! Authorization done
 [1580201350.5235167] Connection is alive! Ping message was successful
 [1580201351.9993446] Connection is alive! New message in chat
@@ -28,8 +28,8 @@ python main.py
 [1580201361.7558668] Connection is alive! New message in chat
 .......
 ```
-Интерфейс чата<br>
+РРЅС‚РµСЂС„РµР№СЃ С‡Р°С‚Р°<br>
 <a href="https://ibb.co/XZnKnDy"><img src="https://i.ibb.co/PZ2P2MT/example.png" alt="example" border="0"></a>
 
-Интерфейс регистрации<br>
+РРЅС‚РµСЂС„РµР№СЃ СЂРµРіРёСЃС‚СЂР°С†РёРё<br>
 <a href="https://imgbb.com/"><img src="https://i.ibb.co/XpNr4Zh/example-reg.png" alt="example-reg" border="0"></a>
