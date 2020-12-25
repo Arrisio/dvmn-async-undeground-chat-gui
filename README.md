@@ -18,14 +18,14 @@ pip install -r requirements.txt
 python main.py
 
 Выполнена авторизация. Пользователь Focused Loyd
-[1580201350.5225937] Connection is alive! Authorization done
-[1580201350.5235167] Connection is alive! Ping message was successful
-[1580201351.9993446] Connection is alive! New message in chat
-[1580201353.5381699] Connection is alive! New message in chat
-[1580201356.3226976] Connection is alive! New message in chat
-[1580201358.85638] Connection is alive! New message in chat
-[1580201360.5247176] Connection is alive! Ping message was successful
-[1580201361.7558668] Connection is alive! New message in chat
+[1580201350] Connection is alive! Authorization done
+[1580201350] Connection is alive! Ping message was successful
+[1580201351] Connection is alive! New message in chat
+[1580201353] Connection is alive! New message in chat
+[1580201356] Connection is alive! New message in chat
+[1580201358] Connection is alive! New message in chat
+[1580201360] Connection is alive! Ping message was successful
+[1580201361] Connection is alive! New message in chat
 .......
 ```
 Интерфейс чата<br>
