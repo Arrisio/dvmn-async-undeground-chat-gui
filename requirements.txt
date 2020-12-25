@@ -1,0 +1,6 @@
+loguru~=0.5.3
+anyio~=2.0.2
+aiofiles~=0.6.0
+asyncclick~=7.1.2.3
+python-dotenv~=0.15.0
+pydantic~=1.7.3
