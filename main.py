@@ -109,7 +109,7 @@ async def main(host, read_port, send_port, history_path, chat_token, user_name, 
             await tg.spawn(save_messages, chat_queues, history_path)
             await tg.spawn(gui.draw, chat_queues)
 
-    except gui.TkAppClosed:
+    except (gui.TkAppClosed, KeyboardInterrupt):
         logger.warning("gui was closed. exiting ..")
 
     except AuthException:
