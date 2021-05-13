@@ -32,15 +32,13 @@ async def handle_connection(chat_queues, settings):
                 await tg.spawn(watch_for_connection, chat_queues)
         except (
             ConnectionError,
-            ConnectionAbortedError,
-            ConnectionRefusedError,
             gaierror,
             asyncio.exceptions.CancelledError,
             TimeoutError,
             ExceptionGroup,
         ) as err:
             if isinstance(err, ExceptionGroup) and not any(
-                [isinstance(e, ConnectionAbortedError) for e in err.exceptions]
+                [isinstance(e, ConnectionError) for e in err.exceptions]
             ):
                 raise
 
