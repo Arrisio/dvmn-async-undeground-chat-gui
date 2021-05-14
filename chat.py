@@ -128,7 +128,7 @@ async def send_msgs(chat_queues: ChatQueues, settings: Settings):
             async with create_task_group() as tg:
                 tg.start_soon(sending_msgs_from_queue, chat_queues.sending_queue, chat_queues.watchdog_queue, writer)
                 tg.start_soon(ping_pong, chat_queues.watchdog_queue, reader, writer)
-                tg.start_soon(watch_for_connection, chat_queues)
+                tg.start_soon(watch_for_connection, chat_queues.watchdog_queue)
     except CONNECTION_EXCEPTIONS as err:
         # логируем здесь, т.к. адаптацию tenacity под Loguru еще не зарелизили
         # https://tenacity.readthedocs.io/en/latest/changelog.html
@@ -138,12 +138,12 @@ async def send_msgs(chat_queues: ChatQueues, settings: Settings):
         chat_queues.status_updates_queue.put_nowait(SendingConnectionStateChanged.CLOSED)
 
 
-async def watch_for_connection(chat_queues: ChatQueues):
+async def watch_for_connection(watchdog_queue: asyncio.Queue):
     with logger.contextualize(logger_name="watchdog_logger"):
         while True:
             try:
                 async with fail_after(Settings().WATCHDOG_TIMEOUT):
-                    msg = await chat_queues.watchdog_queue.get()
+                    msg = await watchdog_queue.get()
                     logger.info(msg)
             except TimeoutError:
                 raise WatchdogException("not see ping or human messages")
