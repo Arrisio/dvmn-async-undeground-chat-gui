@@ -49,7 +49,7 @@ async def update_tk(root_frame, interval=1 / 120):
         await asyncio.sleep(interval)
 
 
-async def update_conversation_history(panel, messages_queue, fix_vbar_treshold=.999):
+async def update_conversation_history(panel, messages_queue, fix_vbar_treshold=.99):
     while True:
         msg = await messages_queue.get()
 
@@ -129,6 +129,6 @@ async def draw(chat_queues):
 
 
     async with create_task_group() as tg:
-        await tg.spawn(update_tk, root_frame)
-        await tg.spawn(update_conversation_history, conversation_panel, chat_queues.messages_queue),
-        await tg.spawn(update_status_panel, status_labels, chat_queues.status_updates_queue)
+        tg.start_soon(update_tk, root_frame)
+        tg.start_soon(update_conversation_history, conversation_panel, chat_queues.messages_queue),
+        tg.start_soon(update_status_panel, status_labels, chat_queues.status_updates_queue)

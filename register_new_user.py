@@ -1,9 +1,7 @@
 import asyncio
 import os
 import re
-import sys
 import tkinter as tk
-from socket import gaierror
 from tkinter import messagebox
 
 import asyncclick as click
@@ -11,21 +9,21 @@ from anyio import create_task_group
 from loguru import logger
 
 import gui
-from chat import chat_connection, ParseServerResponseException, register
-from settings import Settings
+from chat import register
+from exceptions import ParseServerResponseException
+from settings import Settings , get_loguru_config
 
 
-async def registration(registration_queue, host, send_port):
+
+
+
+async def handle_registration_queue(registration_queue: asyncio.Queue, settings: Settings):
     while True:
         user_name = await registration_queue.get()
-        async with chat_connection(host, send_port) as (
-            reader,
-            writer,
-        ):
-            chat_token = await register(user_name, reader, writer)
-            write_down_token(chat_token)
-            logger.info("received token", extra={"token": chat_token})
-            tk.messagebox.showinfo("register successfully", f"your token: {chat_token} \nsaved to .env file")
+        chat_token = await register(user_name=user_name, settings=settings)
+        write_down_token(chat_token)
+        logger.info("received token", token=chat_token)
+        tk.messagebox.showinfo("register successfully", f"your token: {chat_token} \nsaved to .env file")
 
 
 def write_down_token(token, env_filename=".env"):
@@ -77,41 +75,23 @@ async def draw(register_queue):
 
 
 @click.command()
-@click.option("-h", "--host", default=Settings().HOST, help="chat hostname")
-@click.option("--send_port", default=Settings().SEND_PORT)
+@click.option("-h", "--host", default=lambda: Settings().HOST, help="chat hostname")
+@click.option("--send_port", default=lambda: Settings().SEND_PORT)
 async def main(host, send_port):
-    logger.configure(
-        **{
-            "handlers": [
-                {
-                    "sink": sys.stdout,
-                    "format": "<level>{level: <8} {time:HH:mm:ss}</level>|<cyan>{name:<12}</cyan>:<cyan>{function:<24}</cyan>:<cyan>{line}</cyan> - <level>{message:>32}</level> |{extra}",
-                },
-            ],
-        }
-    )
-
+    logger.configure(**get_loguru_config())
+    global settings
+    settings = Settings(HOST=host, SEND_PORT=send_port)
     register_queue = asyncio.Queue()
     try:
         async with create_task_group() as tg:
-            await tg.spawn(draw, register_queue)
-            await tg.spawn(registration, register_queue, host, send_port)
+            tg.start_soon(draw, register_queue)
+            tg.start_soon(handle_registration_queue, register_queue, settings)
 
     except gui.TkAppClosed:
-        logger.warning("gui was closed. exiting ..")
-
-    except (
-        ConnectionError,
-        ConnectionAbortedError,
-        ConnectionRefusedError,
-        gaierror,
-        asyncio.exceptions.CancelledError,
-        TimeoutError,
-    ) as e:
-        logger.error("can`t connect to chat", extra={"host": host})
+        logger.info("gui was closed. exiting ..")
 
     except ParseServerResponseException as e:
-        logger.error(e.__repr__(), extra={"host": host})
+        logger.error(e.__repr__(), host=settings.HOST)
 
 
 if __name__ == "__main__":
