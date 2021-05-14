@@ -45,6 +45,7 @@ async def main(host, read_port, send_port, history_path, chat_token, user_name, 
         SEND_PORT=send_port,
         HISTORY_PATH=history_path,
         USER_NAME=user_name,
+        LOG_LEVEL=log_level
     )
 
     logger.configure(**get_loguru_config())

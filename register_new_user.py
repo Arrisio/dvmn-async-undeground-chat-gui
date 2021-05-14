@@ -11,10 +11,7 @@ from loguru import logger
 import gui
 from chat import register
 from exceptions import ParseServerResponseException
-from settings import Settings , get_loguru_config
-
-
-
+from settings import Settings, get_loguru_config
 
 
 async def handle_registration_queue(registration_queue: asyncio.Queue, settings: Settings):
@@ -79,7 +76,7 @@ async def draw(register_queue):
 @click.option("--send_port", default=lambda: Settings().SEND_PORT)
 async def main(host, send_port):
     logger.configure(**get_loguru_config())
-    global settings
+
     settings = Settings(HOST=host, SEND_PORT=send_port)
     register_queue = asyncio.Queue()
     try:

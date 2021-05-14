@@ -1,5 +1,5 @@
 import sys
-from typing import  Optional
+from typing import Optional
 
 from pydantic import BaseSettings, FilePath
 
@@ -41,5 +41,3 @@ def get_loguru_config(log_level=Settings().LOG_LEVEL):
             },
         ],
     }
-
-

@@ -10,9 +10,8 @@ from anyio import fail_after, create_task_group
 from loguru import logger
 from tenacity import retry, wait_fixed, retry_if_exception_type
 
-import gui
 from exceptions import ParseServerResponseException, WatchdogException, AuthException, CONNECTION_EXCEPTIONS
-from gui import SendingConnectionStateChanged, NicknameReceived
+from gui import SendingConnectionStateChanged, ReadConnectionStateChanged, NicknameReceived
 from settings import Settings
 
 
@@ -119,7 +118,7 @@ async def send_msgs(chat_queues: ChatQueues, settings: Settings):
     chat_queues.status_updates_queue.put_nowait(SendingConnectionStateChanged.INITIATED)
     try:
         if not settings.CHAT_TOKEN:
-            settings.CHAT_TOKEN = await register(user_name=settings.USER_NAME)
+            settings.CHAT_TOKEN = await register(user_name=settings.USER_NAME, settings=settings)
 
         async with chat_connection(settings.HOST, settings.SEND_PORT) as (reader, writer):
             await authorize(chat_queues.status_updates_queue, settings.CHAT_TOKEN, reader, writer)
@@ -136,7 +135,7 @@ async def send_msgs(chat_queues: ChatQueues, settings: Settings):
         logger.error("connection error", error=err, host=settings.HOST, port=settings.SEND_PORT)
         raise
     finally:
-        chat_queues.status_updates_queue.put_nowait(gui.SendingConnectionStateChanged.CLOSED)
+        chat_queues.status_updates_queue.put_nowait(SendingConnectionStateChanged.CLOSED)
 
 
 async def watch_for_connection(chat_queues: ChatQueues):
@@ -158,9 +157,9 @@ async def read_msgs(chat_queues: ChatQueues, settings: Settings):
     try:
         async with chat_connection(settings.HOST, settings.READ_PORT) as (reader, writer):
             while True:
-                chat_queues.status_updates_queue.put_nowait(gui.ReadConnectionStateChanged.INITIATED)
+                chat_queues.status_updates_queue.put_nowait(ReadConnectionStateChanged.INITIATED)
                 async with fail_after(settings.READ_TIMEOUT):
-                    chat_queues.status_updates_queue.put_nowait(gui.ReadConnectionStateChanged.ESTABLISHED)
+                    chat_queues.status_updates_queue.put_nowait(ReadConnectionStateChanged.ESTABLISHED)
                     if income_message_text := (await reader.readline()).decode(encoding="utf8"):
                         chat_queues.messages_queue.put_nowait(income_message_text)
                         chat_queues.save_messages_queue.put_nowait(income_message_text)
@@ -169,7 +168,7 @@ async def read_msgs(chat_queues: ChatQueues, settings: Settings):
         logger.error(f"connection error", error=err, host=settings.HOST, port=settings.READ_PORT)
         raise
     finally:
-        chat_queues.status_updates_queue.put_nowait(gui.ReadConnectionStateChanged.CLOSED)
+        chat_queues.status_updates_queue.put_nowait(ReadConnectionStateChanged.CLOSED)
 
 
 async def save_messages(chat_queues: ChatQueues, history_path):
