@@ -1,4 +1,5 @@
 import asyncio
+import logging
 import os
 import re
 import tkinter as tk
@@ -6,12 +7,13 @@ from tkinter import messagebox
 
 import asyncclick as click
 from anyio import create_task_group
-from loguru import logger
 
 import gui
 from chat import register
 from exceptions import ParseServerResponseException
-from settings import Settings, get_loguru_config
+from settings import Settings
+
+logger = logging.getLogger(__name__)
 
 
 async def handle_registration_queue(registration_queue: asyncio.Queue, settings: Settings):
@@ -19,7 +21,7 @@ async def handle_registration_queue(registration_queue: asyncio.Queue, settings:
         user_name = await registration_queue.get()
         chat_token = await register(user_name=user_name, settings=settings)
         write_down_token(chat_token)
-        logger.info("received token", token=chat_token)
+        logger.debug(f"received token | token={chat_token}")
         tk.messagebox.showinfo("register successfully", f"your token: {chat_token} \nsaved to .env file")
 
 
@@ -75,9 +77,12 @@ async def draw(register_queue):
 @click.option("-h", "--host", default=lambda: Settings().HOST, help="chat hostname")
 @click.option("--send_port", default=lambda: Settings().SEND_PORT)
 async def main(host, send_port):
-    logger.configure(**get_loguru_config())
-
     settings = Settings(HOST=host, SEND_PORT=send_port)
+    logging.basicConfig(
+        level=settings.LOG_LEVEL,
+        format="%(asctime)s - [%(levelname)s] -  %(name)s - (%(filename)s).%(funcName)s(%(lineno)d) - %(message)s",
+    )
+
     register_queue = asyncio.Queue()
     try:
         async with create_task_group() as tg:
@@ -87,8 +92,8 @@ async def main(host, send_port):
     except gui.TkAppClosed:
         logger.info("gui was closed. exiting ..")
 
-    except ParseServerResponseException as e:
-        logger.error(e.__repr__(), host=settings.HOST)
+    except ParseServerResponseException as err:
+        logger.error(f" error={err} | host={settings.HOST} | port={settings.SEND_PORT}")
 
 
 if __name__ == "__main__":

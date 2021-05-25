@@ -1,19 +1,15 @@
+import logging
 from tkinter import messagebox
 
 import asyncclick as click
 from anyio import create_task_group
-from loguru import logger
 
 import gui
-from chat import (
-    send_msgs,
-    ChatQueues,
-    save_messages,
-    read_msgs,
-    load_chat_history
-)
+from chat import send_msgs, ChatQueues, save_messages, read_msgs, load_chat_history
 from exceptions import ParseServerResponseException, AuthException
-from settings import Settings, get_loguru_config
+from settings import Settings
+
+logger = logging.getLogger(__name__)
 
 
 @click.command()
@@ -45,10 +41,13 @@ async def main(host, read_port, send_port, history_path, chat_token, user_name, 
         SEND_PORT=send_port,
         HISTORY_PATH=history_path,
         USER_NAME=user_name,
-        LOG_LEVEL=log_level
+        LOG_LEVEL=log_level,
     )
 
-    logger.configure(**get_loguru_config())
+    logging.basicConfig(
+        level=settings.LOG_LEVEL,
+        format="%(asctime)s - [%(levelname)s] -  %(name)s - (%(filename)s).%(funcName)s(%(lineno)d) - %(message)s",
+    )
 
     chat_queues = ChatQueues()
     await load_chat_history(chat_queues.messages_queue, history_path)
@@ -67,8 +66,8 @@ async def main(host, read_port, send_port, history_path, chat_token, user_name, 
         messagebox.showerror("Неверный токен", "Проверьте токен, сервер его не узнал")
         logger.error("chat token is not valid. exiting ...")
 
-    except ParseServerResponseException as e:
-        logger.error(e.__repr__(), extra={"host": host})
+    except ParseServerResponseException as err:
+        logger.error(f"{err} | host= {host}")
 
 
 if __name__ == "__main__":

@@ -1,5 +1,6 @@
 import asyncio
 import json
+import logging
 from asyncio import Queue, StreamWriter, StreamReader
 from contextlib import asynccontextmanager
 from dataclasses import dataclass, field
@@ -7,12 +8,13 @@ from typing import Tuple
 
 import aiofiles
 from anyio import fail_after, create_task_group
-from loguru import logger
 from tenacity import retry, wait_fixed, retry_if_exception_type
 
 from exceptions import ParseServerResponseException, WatchdogException, AuthException, CONNECTION_EXCEPTIONS
 from gui import SendingConnectionStateChanged, ReadConnectionStateChanged, NicknameReceived
 from settings import Settings
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -26,14 +28,14 @@ class ChatQueues:
 
 @asynccontextmanager
 async def chat_connection(host: str, port: int) -> Tuple[asyncio.StreamReader, asyncio.StreamWriter]:
-    logger.debug("trying to connect to server", host=host, port=port)
+    logger.debug(f"trying to connect to server | host={host}, port={port}")
 
     try:
         async with fail_after(Settings().CONNECTION_TIMEOUT):
             reader, writer = await asyncio.open_connection(host, port)
     except TimeoutError:
         raise ConnectionError("connection timeout")
-    logger.debug("connect to server successfully", host=host, port=port)
+    logger.debug(f"connect to server successfully | host={host}, port={port}")
 
     try:
         yield reader, writer
@@ -44,7 +46,7 @@ async def chat_connection(host: str, port: int) -> Tuple[asyncio.StreamReader, a
 
 async def authorize(status_updates_queue: Queue, chat_token: str, reader: StreamReader, writer: StreamWriter):
     init_response = (await reader.readline()).decode()
-    logger.debug("get init response from server", init_response=init_response)
+    logger.debug(f"get init response from server | init_response={init_response}")
 
     writer.write(f"{chat_token}\n".encode())
     await writer.drain()
@@ -57,7 +59,7 @@ async def authorize(status_updates_queue: Queue, chat_token: str, reader: Stream
     except json.JSONDecodeError:
         raise ParseServerResponseException("error while auth")
 
-    logger.debug("receives auth response", extra=auth_result)
+    logger.debug(f"receives auth response | auth_result={auth_result}")
     if not auth_result:
         raise AuthException
 
@@ -68,22 +70,19 @@ async def authorize(status_updates_queue: Queue, chat_token: str, reader: Stream
 async def register(user_name: str, settings: Settings):
     async with chat_connection(settings.HOST, settings.SEND_PORT) as (reader, writer):
         init_response = (await reader.readline()).decode()
-        logger.debug(
-            "get init response from server",
-            extra={"init_response": init_response},
-        )
+        logger.debug(f"get init response from server | init_response={init_response}")
 
-        logger.debug("start registering user", user_name=user_name)
+        logger.debug(f"start registering user | user_name={user_name}")
         writer.write(b"\n")
         await writer.drain()
 
-        logger.debug("awaiting login", server_response=await reader.readline())
+        logger.debug(f"awaiting login | server_response={await reader.readline()}")
 
         writer.write(f"{user_name}\n".encode())
         await writer.drain()
 
         register_response = await reader.readline()
-        logger.debug("register_response received", register_response=register_response.decode())
+        logger.debug(f"register_response received | register_response={register_response.decode()}")
 
         try:
             return json.loads(register_response)["account_hash"]
@@ -97,7 +96,7 @@ async def sending_msgs_from_queue(sending_queue: Queue, watchdog_queue: Queue, w
         for line in message.splitlines():
             writer.write(f"{line}\n\n".encode())
         await writer.drain()
-        logger.debug("message sent successfully", message=message)
+        logger.debug(f"message sent successfully | message={message}")
         watchdog_queue.put_nowait("Connection is alive. Message sent")
 
 
@@ -130,23 +129,30 @@ async def send_msgs(chat_queues: ChatQueues, settings: Settings):
                 tg.start_soon(ping_pong, chat_queues.watchdog_queue, reader, writer)
                 tg.start_soon(watch_for_connection, chat_queues.watchdog_queue)
     except CONNECTION_EXCEPTIONS as err:
-        # логируем здесь, т.к. адаптацию tenacity под Loguru еще не зарелизили
-        # https://tenacity.readthedocs.io/en/latest/changelog.html
-        logger.error("connection error", error=err, host=settings.HOST, port=settings.SEND_PORT)
+        logger.error(f"connection error | error={err} | host={settings.HOST} | port={settings.SEND_PORT}")
         raise
     finally:
         chat_queues.status_updates_queue.put_nowait(SendingConnectionStateChanged.CLOSED)
 
 
+class WatchdogFormatter(logging.Formatter):
+    def formatTime(self, record, datefmt=None):
+        return record.created
+
+
 async def watch_for_connection(watchdog_queue: asyncio.Queue):
-    with logger.contextualize(logger_name="watchdog_logger"):
-        while True:
-            try:
-                async with fail_after(Settings().WATCHDOG_TIMEOUT):
-                    msg = await watchdog_queue.get()
-                    logger.info(msg)
-            except TimeoutError:
-                raise WatchdogException("not see ping or human messages")
+    watchdog_logger = logging.getLogger("watchdog_logger")
+    watchdog_log_handler = logging.StreamHandler()
+    watchdog_log_handler.setFormatter(WatchdogFormatter("[%(asctime)s] %(message)s"))
+    watchdog_logger.addHandler(watchdog_log_handler)
+
+    while True:
+        try:
+            async with fail_after(Settings().WATCHDOG_TIMEOUT):
+                msg = await watchdog_queue.get()
+                logger.info(msg)
+        except TimeoutError:
+            raise WatchdogException("not see ping or human messages")
 
 
 @retry(
@@ -165,7 +171,7 @@ async def read_msgs(chat_queues: ChatQueues, settings: Settings):
                         chat_queues.save_messages_queue.put_nowait(income_message_text)
                         chat_queues.watchdog_queue.put_nowait("Connection is alive. New message in chat")
     except CONNECTION_EXCEPTIONS as err:
-        logger.error(f"connection error", error=err, host=settings.HOST, port=settings.READ_PORT)
+        logger.error(f"connection error | error={err} | host={settings.HOST} | port={settings.SEND_PORT}")
         raise
     finally:
         chat_queues.status_updates_queue.put_nowait(ReadConnectionStateChanged.CLOSED)
