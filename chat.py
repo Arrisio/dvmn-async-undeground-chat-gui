@@ -91,7 +91,7 @@ async def register(user_name: str, settings: Settings):
             raise ParseServerResponseException("error while registration")
 
 
-async def sending_msgs_from_queue(sending_queue: Queue, watchdog_queue: Queue, writer: StreamWriter):
+async def handle_msgs_queue(sending_queue: Queue, watchdog_queue: Queue, writer: StreamWriter):
     while True:
         message = await sending_queue.get()
         for line in message.splitlines():
@@ -126,7 +126,7 @@ async def send_msgs(chat_queues: ChatQueues, settings: Settings):
             chat_queues.status_updates_queue.put_nowait(SendingConnectionStateChanged.ESTABLISHED)
 
             async with create_task_group() as tg:
-                tg.start_soon(sending_msgs_from_queue, chat_queues.sending_queue, chat_queues.watchdog_queue, writer)
+                tg.start_soon(handle_msgs_queue, chat_queues.sending_queue, chat_queues.watchdog_queue, writer)
                 tg.start_soon(ping_pong, chat_queues.watchdog_queue, reader, writer)
                 tg.start_soon(watch_for_connection, chat_queues.watchdog_queue)
     except CONNECTION_EXCEPTIONS as err:
@@ -163,10 +163,10 @@ async def watch_for_connection(watchdog_queue: asyncio.Queue):
     retry=retry_if_exception_type(CONNECTION_EXCEPTIONS),
 )
 async def read_msgs(chat_queues: ChatQueues, settings: Settings):
+    chat_queues.status_updates_queue.put_nowait(ReadConnectionStateChanged.INITIATED)
     try:
         async with chat_connection(settings.HOST, settings.READ_PORT) as (reader, writer):
             while True:
-                chat_queues.status_updates_queue.put_nowait(ReadConnectionStateChanged.INITIATED)
                 async with fail_after(settings.READ_TIMEOUT):
                     chat_queues.status_updates_queue.put_nowait(ReadConnectionStateChanged.ESTABLISHED)
                     if income_message_text := (await reader.readline()).decode(encoding="utf8"):
