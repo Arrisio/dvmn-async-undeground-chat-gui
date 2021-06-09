@@ -1,10 +1,9 @@
-import sys
 from typing import Optional
 
 from pydantic import BaseSettings, FilePath
 
 
-class Settings(BaseSettings):
+class ChatRuntimeSettings(BaseSettings):
     CHAT_TOKEN: Optional[str] = None
     USER_NAME: str = "anonymous"
 
@@ -20,6 +19,14 @@ class Settings(BaseSettings):
     RECONNECT_TIMEOUT = 5
 
     LOG_LEVEL = "DEBUG"
+
+    class Config:
+        env_file = ".env"
+
+
+class RegistrationSettings(BaseSettings):
+    HOST: str = "minechat.dvmn.org"
+    SEND_PORT: int = 5050
 
     class Config:
         env_file = ".env"

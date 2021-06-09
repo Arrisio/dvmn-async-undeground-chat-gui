@@ -13,7 +13,7 @@ from tenacity import retry, wait_fixed, retry_if_exception_type
 
 from exceptions import ParseServerResponseException, WatchdogException, AuthException, CONNECTION_EXCEPTIONS
 from gui import SendingConnectionStateChanged, ReadConnectionStateChanged, NicknameReceived
-from settings import Settings
+from settings import ChatRuntimeSettings, RegistrationSettings
 
 logger = logging.getLogger(__name__)
 
@@ -32,7 +32,7 @@ async def chat_connection(host: str, port: int) -> Tuple[asyncio.StreamReader, a
     logger.debug(f"trying to connect to server | host={host}, port={port}")
 
     try:
-        async with fail_after(Settings().CONNECTION_TIMEOUT):
+        async with fail_after(ChatRuntimeSettings().CONNECTION_TIMEOUT):
             reader, writer = await asyncio.open_connection(host, port)
     except TimeoutError:
         raise ConnectionError("connection timeout")
@@ -68,7 +68,7 @@ async def authorize(status_updates_queue: Queue, chat_token: str, reader: Stream
     logger.info("auth successfully")
 
 
-async def register(user_name: str, settings: Settings):
+async def register(user_name: str, settings: [ChatRuntimeSettings, RegistrationSettings]):
     async with chat_connection(settings.HOST, settings.SEND_PORT) as (reader, writer):
         init_response = (await reader.readline()).decode()
         logger.debug(f"get init response from server | init_response={init_response}")
@@ -107,14 +107,14 @@ async def ping_pong(watchdog_queue: Queue, reader: StreamReader, writer: StreamW
         await writer.drain()
         await reader.readline()
         watchdog_queue.put_nowait("Ping message was successful")
-        await asyncio.sleep(Settings().PING_PONG_INTERVAL)
+        await asyncio.sleep(ChatRuntimeSettings().PING_PONG_INTERVAL)
 
 
 @retry(
-    wait=wait_fixed(Settings().RECONNECT_TIMEOUT),
+    wait=wait_fixed(ChatRuntimeSettings().RECONNECT_TIMEOUT),
     retry=retry_if_exception_type(CONNECTION_EXCEPTIONS),
 )
-async def send_msgs(chat_queues: ChatQueues, settings: Settings):
+async def send_msgs(chat_queues: ChatQueues, settings: ChatRuntimeSettings):
     chat_queues.status_updates_queue.put_nowait(SendingConnectionStateChanged.INITIATED)
     try:
         if not settings.CHAT_TOKEN:
@@ -151,7 +151,7 @@ async def watch_for_connection(watchdog_queue: asyncio.Queue):
 
     while True:
         try:
-            async with fail_after(Settings().WATCHDOG_TIMEOUT):
+            async with fail_after(ChatRuntimeSettings().WATCHDOG_TIMEOUT):
                 msg = await watchdog_queue.get()
                 watchdog_logger.info(msg)
         except TimeoutError:
@@ -159,10 +159,10 @@ async def watch_for_connection(watchdog_queue: asyncio.Queue):
 
 
 @retry(
-    wait=wait_fixed(Settings().RECONNECT_TIMEOUT),
+    wait=wait_fixed(ChatRuntimeSettings().RECONNECT_TIMEOUT),
     retry=retry_if_exception_type(CONNECTION_EXCEPTIONS),
 )
-async def read_msgs(chat_queues: ChatQueues, settings: Settings):
+async def read_msgs(chat_queues: ChatQueues, settings: ChatRuntimeSettings):
     chat_queues.status_updates_queue.put_nowait(ReadConnectionStateChanged.INITIATED)
     try:
         async with chat_connection(settings.HOST, settings.READ_PORT) as (reader, writer):

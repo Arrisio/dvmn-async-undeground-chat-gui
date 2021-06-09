@@ -11,12 +11,12 @@ from anyio import create_task_group
 import gui
 from chat import register
 from exceptions import ParseServerResponseException
-from settings import Settings
+from settings import RegistrationSettings
 
 logger = logging.getLogger(__name__)
 
 
-async def handle_registration_queue(registration_queue: asyncio.Queue, settings: Settings):
+async def handle_registration_queue(registration_queue: asyncio.Queue, settings: RegistrationSettings):
     while True:
         user_name = await registration_queue.get()
         chat_token = await register(user_name=user_name, settings=settings)
@@ -74,10 +74,10 @@ async def draw(register_queue):
 
 
 @click.command()
-@click.option("-h", "--host", default=lambda: Settings().HOST, help="chat hostname")
-@click.option("--send_port", default=lambda: Settings().SEND_PORT)
+@click.option("-h", "--host", default=lambda: RegistrationSettings().HOST, help="chat hostname")
+@click.option("--send_port", default=lambda: RegistrationSettings().SEND_PORT)
 async def main(host, send_port):
-    settings = Settings(HOST=host, SEND_PORT=send_port)
+    settings = RegistrationSettings(HOST=host, SEND_PORT=send_port)
     logging.basicConfig(
         level=settings.LOG_LEVEL,
         format="%(asctime)s - [%(levelname)s] -  %(name)s - (%(filename)s).%(funcName)s(%(lineno)d) - %(message)s",

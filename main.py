@@ -7,34 +7,34 @@ from anyio import create_task_group
 import gui
 from chat import send_msgs, ChatQueues, save_messages, read_msgs, load_chat_history
 from exceptions import ParseServerResponseException, AuthException
-from settings import Settings
+from settings import ChatRuntimeSettings
 
 logger = logging.getLogger(__name__)
 
 
 @click.command()
-@click.option("-h", "--host", default=lambda: Settings().HOST, help="chat hostname")
-@click.option("--read_port", default=lambda: Settings().READ_PORT)
-@click.option("--send_port", default=lambda: Settings().SEND_PORT)
+@click.option("-h", "--host", default=lambda: ChatRuntimeSettings().HOST, help="chat hostname")
+@click.option("--read_port", default=lambda: ChatRuntimeSettings().READ_PORT)
+@click.option("--send_port", default=lambda: ChatRuntimeSettings().SEND_PORT)
 @click.option(
     "--history ",
     "-H",
     "history_path",
-    default=lambda: Settings().HISTORY_PATH,
+    default=lambda: ChatRuntimeSettings().HISTORY_PATH,
     help="path to write chat history",
     type=click.Path(exists=False, dir_okay=False, readable=True),
 )
-@click.option("-t", "--chat_token", default=lambda: Settings().CHAT_TOKEN, help="chat authenticate token")
+@click.option("-t", "--chat_token", default=lambda: ChatRuntimeSettings().CHAT_TOKEN, help="chat authenticate token")
 @click.option(
     "-u",
     "--user_name",
-    default=lambda: Settings().USER_NAME,
+    default=lambda: ChatRuntimeSettings().USER_NAME,
     help="if auth token is not provided, new user will be registered with this  username",
 )
-@click.option("-l", "--log_level", default=lambda: Settings().LOG_LEVEL)
+@click.option("-l", "--log_level", default=lambda: ChatRuntimeSettings().LOG_LEVEL)
 async def main(host, read_port, send_port, history_path, chat_token, user_name, log_level):
 
-    settings = Settings(
+    settings = ChatRuntimeSettings(
         CHAT_TOKEN=chat_token,
         HOST=host,
         READ_PORT=read_port,
