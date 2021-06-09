@@ -6,7 +6,7 @@
 
 ## Как установить
 
-Для работы клиентов нужен Python версии не ниже 3.8 и пакетным менеджером [poetry](https://python-poetry.org/docs/)
+Для работы клиентов нужен Python версии не ниже 3.8 и пакетный менеджер [poetry](https://python-poetry.org/docs/)
 
 ```bash
 poetry install
