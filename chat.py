@@ -1,7 +1,6 @@
 import asyncio
 import json
 import logging
-import sys
 from asyncio import Queue, StreamWriter, StreamReader
 from contextlib import asynccontextmanager
 from dataclasses import dataclass, field
@@ -16,6 +15,7 @@ from gui import SendingConnectionStateChanged, ReadConnectionStateChanged, Nickn
 from settings import ChatRuntimeSettings, RegistrationSettings
 
 logger = logging.getLogger(__name__)
+watchdog_logger = logging.getLogger("watchdog_logger")
 
 
 @dataclass
@@ -136,19 +136,7 @@ async def send_msgs(chat_queues: ChatQueues, settings: ChatRuntimeSettings):
         chat_queues.status_updates_queue.put_nowait(SendingConnectionStateChanged.CLOSED)
 
 
-class WatchdogFormatter(logging.Formatter):
-    def formatTime(self, record, datefmt=None):
-        return int(record.created)
-
-
 async def watch_for_connection(watchdog_queue: asyncio.Queue):
-    watchdog_logger = logging.getLogger("watchdog_logger")
-    watchdog_logger.propagate = False
-
-    watchdog_log_handler = logging.StreamHandler(stream=sys.stdout)
-    watchdog_log_handler.setFormatter(WatchdogFormatter("[%(asctime)s] %(message)s"))
-    watchdog_logger.addHandler(watchdog_log_handler)
-
     while True:
         try:
             async with fail_after(ChatRuntimeSettings().WATCHDOG_TIMEOUT):

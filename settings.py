@@ -1,3 +1,5 @@
+import logging
+import sys
 from typing import Optional
 
 from pydantic import BaseSettings, FilePath
@@ -30,3 +32,17 @@ class RegistrationSettings(BaseSettings):
 
     class Config:
         env_file = ".env"
+
+
+class WatchdogFormatter(logging.Formatter):
+    def formatTime(self, record, datefmt=None):
+        return int(record.created)
+
+
+def configure_watchdog_logger():
+    watchdog_logger = logging.getLogger("watchdog_logger")
+    watchdog_logger.propagate = False
+
+    watchdog_log_handler = logging.StreamHandler(stream=sys.stdout)
+    watchdog_log_handler.setFormatter(WatchdogFormatter("[%(asctime)s] %(message)s"))
+    watchdog_logger.addHandler(watchdog_log_handler)

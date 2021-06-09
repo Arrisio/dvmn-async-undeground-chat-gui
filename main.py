@@ -7,7 +7,7 @@ from anyio import create_task_group
 import gui
 from chat import send_msgs, ChatQueues, save_messages, read_msgs, load_chat_history
 from exceptions import ParseServerResponseException, AuthException
-from settings import ChatRuntimeSettings
+from settings import ChatRuntimeSettings, configure_watchdog_logger
 
 logger = logging.getLogger(__name__)
 
@@ -48,6 +48,7 @@ async def main(host, read_port, send_port, history_path, chat_token, user_name, 
         level=settings.LOG_LEVEL,
         format="%(asctime)s - [%(levelname)s] -  %(name)s - (%(filename)s).%(funcName)s(%(lineno)d) - %(message)s",
     )
+    configure_watchdog_logger()
 
     chat_queues = ChatQueues()
     await load_chat_history(chat_queues.messages_queue, history_path)
